@@ -1,0 +1,12 @@
+[
+ {"text": "The company does not use MFA, has outdated Windows systems, and performs backups once a month.",
+  "expected": {"mfa_enabled": "No", "patch_management": "POOR", "backup_frequency": "Monthly"}},
+ {"text": "We use multi-factor authentication everywhere, have a firewall and antivirus on all PCs, and take daily backups.",
+  "expected": {"mfa_enabled": "Yes", "firewall_enabled": "Yes", "antivirus_enabled": "Yes", "backup_frequency": "Daily"}},
+ {"text": "There is no firewall and we have no incident response plan. Staff have never had security training.",
+  "expected": {"firewall_enabled": "No", "incident_response_plan": "No"}},
+ {"text": "We have a written security policy and run phishing drills. We have 40 employees.",
+  "expected": {"security_policy": "Yes", "phishing_training": "Yes", "employee_count": 40}},
+ {"text": "No backups are taken and we do not use a VPN.",
+  "expected": {"backup_enabled": "No", "vpn_enabled": "No"}}
+]

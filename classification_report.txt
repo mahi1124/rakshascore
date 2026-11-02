@@ -1,0 +1,12 @@
+Best model: Random Forest
+
+              precision    recall  f1-score   support
+
+    Critical       0.98      0.98      0.98      1268
+        High       0.93      0.91      0.92       550
+         Low       0.75      0.67      0.71         9
+      Medium       0.89      0.90      0.89       173
+
+    accuracy                           0.95      2000
+   macro avg       0.89      0.87      0.88      2000
+weighted avg       0.95      0.95      0.95      2000

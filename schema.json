@@ -1,0 +1,309 @@
+{
+  "columns": [
+    "company_size",
+    "industry",
+    "annual_revenue",
+    "employee_count",
+    "mfa_enabled",
+    "password_policy",
+    "privileged_accounts",
+    "firewall_enabled",
+    "network_segmentation",
+    "vpn_enabled",
+    "remote_access",
+    "antivirus_enabled",
+    "edr_enabled",
+    "device_encryption",
+    "patch_management",
+    "vulnerability_scanning",
+    "critical_vulnerabilities",
+    "asset_inventory",
+    "backup_enabled",
+    "backup_frequency",
+    "backup_tested",
+    "security_policy",
+    "incident_response_plan",
+    "business_continuity_plan",
+    "security_training",
+    "phishing_training",
+    "employee_access_control",
+    "data_encryption",
+    "data_classification",
+    "cloud_security",
+    "logging_enabled",
+    "siem_enabled",
+    "security_monitoring",
+    "vendor_risk_assessment",
+    "third_party_access",
+    "previous_incidents",
+    "incident_count_last_year"
+  ],
+  "categorical": {
+    "company_size": {
+      "values": [
+        "Micro",
+        "Small",
+        "Medium"
+      ],
+      "default": "Micro"
+    },
+    "industry": {
+      "values": [
+        "Professional Services",
+        "Hospitality",
+        "IT Services",
+        "Finance",
+        "Education",
+        "Retail",
+        "Manufacturing",
+        "Construction",
+        "Logistics",
+        "Healthcare"
+      ],
+      "default": "Professional Services"
+    },
+    "mfa_enabled": {
+      "values": [
+        "Yes",
+        "No"
+      ],
+      "default": "Yes"
+    },
+    "password_policy": {
+      "values": [
+        "Weak",
+        "Moderate",
+        "Strong"
+      ],
+      "default": "Weak"
+    },
+    "firewall_enabled": {
+      "values": [
+        "Yes",
+        "No"
+      ],
+      "default": "Yes"
+    },
+    "network_segmentation": {
+      "values": [
+        "Yes",
+        "No"
+      ],
+      "default": "Yes"
+    },
+    "vpn_enabled": {
+      "values": [
+        "Yes",
+        "No"
+      ],
+      "default": "Yes"
+    },
+    "remote_access": {
+      "values": [
+        "Yes",
+        "No"
+      ],
+      "default": "Yes"
+    },
+    "antivirus_enabled": {
+      "values": [
+        "Yes",
+        "No"
+      ],
+      "default": "Yes"
+    },
+    "edr_enabled": {
+      "values": [
+        "No",
+        "Yes"
+      ],
+      "default": "No"
+    },
+    "device_encryption": {
+      "values": [
+        "Yes",
+        "No"
+      ],
+      "default": "Yes"
+    },
+    "patch_management": {
+      "values": [
+        "Moderate",
+        "Poor",
+        "Good"
+      ],
+      "default": "Moderate"
+    },
+    "vulnerability_scanning": {
+      "values": [
+        "Yes",
+        "No"
+      ],
+      "default": "Yes"
+    },
+    "asset_inventory": {
+      "values": [
+        "Yes",
+        "No"
+      ],
+      "default": "Yes"
+    },
+    "backup_enabled": {
+      "values": [
+        "Yes",
+        "No"
+      ],
+      "default": "Yes"
+    },
+    "backup_frequency": {
+      "values": [
+        "Daily",
+        "Unknown",
+        "Weekly",
+        "Monthly"
+      ],
+      "default": "Daily"
+    },
+    "backup_tested": {
+      "values": [
+        "Yes",
+        "No"
+      ],
+      "default": "Yes"
+    },
+    "security_policy": {
+      "values": [
+        "Yes",
+        "No"
+      ],
+      "default": "Yes"
+    },
+    "incident_response_plan": {
+      "values": [
+        "Yes",
+        "No"
+      ],
+      "default": "Yes"
+    },
+    "business_continuity_plan": {
+      "values": [
+        "No",
+        "Yes"
+      ],
+      "default": "No"
+    },
+    "security_training": {
+      "values": [
+        "Yes",
+        "No"
+      ],
+      "default": "Yes"
+    },
+    "phishing_training": {
+      "values": [
+        "Yes",
+        "No"
+      ],
+      "default": "Yes"
+    },
+    "employee_access_control": {
+      "values": [
+        "Yes",
+        "No"
+      ],
+      "default": "Yes"
+    },
+    "data_encryption": {
+      "values": [
+        "Yes",
+        "No"
+      ],
+      "default": "Yes"
+    },
+    "data_classification": {
+      "values": [
+        "No",
+        "Yes"
+      ],
+      "default": "No"
+    },
+    "cloud_security": {
+      "values": [
+        "Weak",
+        "Strong",
+        "Moderate"
+      ],
+      "default": "Weak"
+    },
+    "logging_enabled": {
+      "values": [
+        "Yes",
+        "No"
+      ],
+      "default": "Yes"
+    },
+    "siem_enabled": {
+      "values": [
+        "No",
+        "Yes"
+      ],
+      "default": "No"
+    },
+    "security_monitoring": {
+      "values": [
+        "Yes",
+        "No"
+      ],
+      "default": "Yes"
+    },
+    "vendor_risk_assessment": {
+      "values": [
+        "Yes",
+        "No"
+      ],
+      "default": "Yes"
+    },
+    "third_party_access": {
+      "values": [
+        "Yes",
+        "No"
+      ],
+      "default": "Yes"
+    },
+    "previous_incidents": {
+      "values": [
+        "No",
+        "Yes"
+      ],
+      "default": "No"
+    }
+  },
+  "numeric": {
+    "annual_revenue": {
+      "min": 0.1,
+      "max": 85.14,
+      "default": 2.88
+    },
+    "employee_count": {
+      "min": 1.0,
+      "max": 498.0,
+      "default": 26.0
+    },
+    "privileged_accounts": {
+      "min": 1.0,
+      "max": 26.0,
+      "default": 3.0
+    },
+    "critical_vulnerabilities": {
+      "min": 0.0,
+      "max": 14.0,
+      "default": 3.0
+    },
+    "incident_count_last_year": {
+      "min": 0.0,
+      "max": 5.0,
+      "default": 0.0
+    }
+  },
+  "score_higher_is_riskier": true
+}
