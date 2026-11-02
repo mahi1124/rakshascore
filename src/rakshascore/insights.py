@@ -440,14 +440,19 @@ def plan_with_phases(record, top_k=14):
             continue
         items.append(dict(col=d["column"], title=kb["title"], frm=_num(d["from"]), to=_num(d["to"]), drop=d["drop"], effort=kb["effort"],
                           cost=kb["cost"], refs=kb["refs"], fix=kb["fix"], id=kb["id"]))
-    phases, cur, rec = [], P.risk_score(record), dict(record)
+    groups = []
     for name, window, eff in PHASES:
         grp = sorted([i for i in items if i["effort"] == eff], key=lambda i: -i["drop"])
+        groups.append((name, window, eff, grp))
+
+    states, rec = [], dict(record)
+    for _, _, _, grp in groups:
         for i in grp:
             rec[i["col"]] = i["to"]
-        after = P.risk_score(rec)
-        phases.append(dict(name=name, window=window, effort=eff, items=grp, before=cur, after=after))
-        cur = after
+        states.append(dict(rec))
+    scores = [P.risk_score(record)] + P.risk_scores(states)
+    phases = [dict(name=name, window=window, effort=eff, items=grp, before=scores[k], after=scores[k + 1])
+              for k, (name, window, eff, grp) in enumerate(groups)]
     return items, phases
 
 

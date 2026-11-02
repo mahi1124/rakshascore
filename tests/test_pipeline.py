@@ -6,6 +6,12 @@ def default_record():
     return {c: (P.CAT[c]["default"] if c in P.CAT else P.NUM[c]["default"]) for c in P.COLUMNS}
 
 
+def test_batched_scores_match_single_scores():
+    record = default_record()
+    variants = [{**record, "mfa_enabled": value} for value in P.CAT["mfa_enabled"]["values"]]
+    assert P.risk_scores(variants) == [P.risk_score(v) for v in variants]
+
+
 def test_predict_returns_valid_score_and_tier():
     score, tier = P.predict(default_record())
     assert 0 <= score <= 100

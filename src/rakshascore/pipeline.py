@@ -269,10 +269,15 @@ def predict(record):
     return risk_score(record), tier
 
 
+def risk_scores(records):
+    """Score many records in a single model call (same semantics as risk_score, ~100x faster)."""
+    raw = np.clip(REG.predict(pd.DataFrame(list(records))[COLUMNS]), 0, 100)
+    return [round(float(r) if HIGHER_IS_RISKIER else 100 - float(r), 1) for r in raw]
+
+
 def risk_score(record):
     """0-100 where HIGHER ALWAYS MEANS MORE RISK (flips automatically if your dataset is the other way round)."""
-    raw = float(np.clip(REG.predict(_frame(record))[0], 0, 100))
-    return round(raw if HIGHER_IS_RISKIER else 100 - raw, 1)
+    return risk_scores([record])[0]
 
 
 # ---------------------------------------------------------------- 3. SHAP
@@ -320,28 +325,47 @@ NOT_FIXABLE = {"company_size", "industry", "annual_revenue", "employee_count",
                "previous_incidents", "incident_count_last_year"}
 
 
-def best_fix(record, col):
+def best_fix(record, col, base=None):
     """Try every allowed value for one question; return (best_value, new_score)."""
+    base = risk_score(record) if base is None else base
     options = CAT[col]["values"] if col in CAT else [NUM[col]["min"]]
-    best_val, best = record[col], risk_score(record)
-    for v in options:
-        trial = dict(record); trial[col] = v
-        s = risk_score(trial)
-        if s < best:
-            best_val, best = v, s
-    return best_val, best
+    trials = []
+    for value in options:
+        trial = dict(record)
+        trial[col] = value
+        trials.append(trial)
+    scores = risk_scores(trials)
+    i = min(range(len(options)), key=lambda k: scores[k])
+    return (options[i], scores[i]) if scores[i] < base else (record[col], base)
 
 
 def fix_plan(record, top_k=6):
     """The questions where changing the answer lowers the score most. Returns list of dicts."""
     base = risk_score(record)
+    ranked = [(c, v) for c, v in sorted(explain_all(record).items(), key=lambda kv: -kv[1])
+              if v > 0 and c not in NOT_FIXABLE]
+    if not ranked:
+        return []
+
+    # Score every candidate value for every driver in ONE model call.
+    options = {c: (CAT[c]["values"] if c in CAT else [NUM[c]["min"]]) for c, _ in ranked}
+    trials, spans = [], []
+    for col, _ in ranked:
+        start = len(trials)
+        for value in options[col]:
+            trial = dict(record)
+            trial[col] = value
+            trials.append(trial)
+        spans.append((col, start, len(trials)))
+
+    scores = risk_scores(trials)
     plan = []
-    for col, impact in sorted(explain_all(record).items(), key=lambda kv: -kv[1]):
-        if impact <= 0 or col in NOT_FIXABLE:
-            continue
-        val, new = best_fix(record, col)
-        if new < base - 0.05:
-            plan.append({"column": col, "from": record[col], "to": val, "drop": round(base - new, 1)})
+    for col, start, end in spans:
+        segment = scores[start:end]
+        i = min(range(len(segment)), key=lambda k: segment[k])
+        if segment[i] < base - 0.05:
+            plan.append({"column": col, "from": record[col], "to": options[col][i],
+                         "drop": round(base - segment[i], 1)})
         if len(plan) == top_k:
             break
     return plan
