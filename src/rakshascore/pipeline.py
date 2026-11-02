@@ -8,35 +8,24 @@ import joblib
 import numpy as np
 import pandas as pd
 import shap
+from dotenv import load_dotenv
 
-HERE = os.path.dirname(os.path.abspath(__file__))
+from . import paths
 
-
-def _load_dotenv():
-    """Optional: put GEMINI_API_KEY=... in a file named .env next to pipeline.py (no terminal needed)."""
-    path = os.path.join(HERE, ".env")
-    if os.path.exists(path):
-        for line in open(path, encoding="utf-8-sig"):
-            line = line.strip()
-            if line and not line.startswith("#") and "=" in line:
-                k, v = line.split("=", 1)
-                os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
-
-
-_load_dotenv()
+load_dotenv(paths.ENV_PATH, override=False)        # optional .env at the repository root
 LAST_ERROR = ""                                    # last LLM problem, so the app can show it
 
 
 def _key(name):
     """Read a key from the environment and remove stray spaces, quotes and <> brackets."""
     return os.getenv(name, "").strip().strip('"').strip("'").strip("<>").strip()
-SCHEMA = json.load(open(os.path.join(HERE, "schema.json")))
+SCHEMA = json.loads(paths.SCHEMA_PATH.read_text(encoding="utf-8"))
 COLUMNS = SCHEMA["columns"]
 CAT, NUM = SCHEMA["categorical"], SCHEMA["numeric"]
 
-CLF = joblib.load(os.path.join(HERE, "cyber_risk_best_model_10k.pkl"))   # your saved XGBoost pipeline
-LE = joblib.load(os.path.join(HERE, "label_encoder.pkl"))
-REG = joblib.load(os.path.join(HERE, "score_model.pkl"))
+CLF = joblib.load(paths.CLF_PATH)                  # saved XGBoost pipeline
+LE = joblib.load(paths.LABEL_ENCODER_PATH)
+REG = joblib.load(paths.SCORE_MODEL_PATH)
 
 LLM_MODEL = os.getenv("LLM_MODEL", "claude-haiku-5-5")                  # Anthropic model
 GEMINI_MODELS = [m for m in [os.getenv("GEMINI_MODEL"), "gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-flash-latest"] if m]

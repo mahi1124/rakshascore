@@ -1,14 +1,12 @@
 """
-RakshaScore Enterprise - Cyber Risk Assessment Platform.
-Run:  python -m streamlit run app_enterprise.py
+RakshaScore - Cyber Risk Assessment Platform.
+Run:  streamlit run app.py
 
 Pages: Assessment | Dashboard | Score Explanation | Remediation | Reports | Methodology
-Needs: pipeline.py, insights.py, schema.json, the 3 .pkl model files (same as the other apps).
+Needs: config/schema.json and the three .pkl files in models/ (created by scripts/train_models.py).
 """
-import html as _html
 import inspect
 import json
-import os
 import re
 import uuid
 from datetime import datetime
@@ -17,13 +15,12 @@ import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
 
-import insights as I
-import pipeline as P
+from rakshascore import insights as I, pipeline as P
+from rakshascore.paths import RESULTS_DIR
 
 st.set_page_config(page_title="RakshaScore | Cyber Risk Assessment Platform", page_icon="🛡️", layout="wide",
                    initial_sidebar_state="expanded")
 STRETCH = {"width": "stretch"} if "width" in inspect.signature(st.button).parameters else {"use_container_width": True}
-HERE = os.path.dirname(os.path.abspath(__file__))
 NAVY, BLUE = "#0F2A47", "#2563EB"
 TIER_COLOR = I.TIER_COLOR
 
@@ -128,8 +125,7 @@ def H(markup):
     st.markdown(re.sub(r"\s*\n\s*", " ", markup.strip()), unsafe_allow_html=True)
 
 
-def esc(x):
-    return _html.escape(str(x))
+esc = I.esc
 
 
 H(CSS)
@@ -146,12 +142,6 @@ def is_int_like(col):
     return all(float(n[k]).is_integer() for k in ("min", "max", "default"))
 
 
-def persist():
-    for k in list(st.session_state.keys()):
-        if k.startswith(("q_", "fix_", "meta_")) or k in ("desc", "use_llm"):
-            st.session_state[k] = st.session_state[k]
-
-
 for col in P.COLUMNS:
     key = f"q_{col}"
     if key not in st.session_state:
@@ -165,7 +155,6 @@ for k, v in dict(use_llm=P.llm_available(), desc="", view="Assessment", meta_org
 st.session_state.setdefault("ref", "RS-" + datetime.now().strftime("%Y%m%d") + "-" + uuid.uuid4().hex[:4].upper())
 if "_goto" in st.session_state:                         # page change requested by a button
     st.session_state["view"] = st.session_state.pop("_goto")
-persist()
 
 
 def read_record():
@@ -394,13 +383,13 @@ def page_dashboard():
 
 # =============================================================== page: score explanation
 def waterfall_html(ins, score):
-    wf = ins["waterfall"]
-    rng = max(100.0, wf["base"] + sum(max(0, r["delta"]) for r in wf["rows"]))
-    rows = f'<tr><td>Baseline: average organisation</td><td style="width:50%"><div class="wf"><i style="left:0;width:{wf["base"] / rng * 100:.1f}%;background:#98A2B3"></i></div></td><td><b>{wf["base"]:.1f}</b></td></tr>'
-    for r in wf["rows"]:
-        lo, hi = min(r["start"], r["end"]), max(r["start"], r["end"])
-        rows += (f'<tr><td>{esc(r["label"])}</td><td><div class="wf"><i style="left:{max(0, lo) / rng * 100:.1f}%;width:{max(.8, (hi - lo) / rng * 100):.1f}%;'
-                 f'background:{"#DC2626" if r["delta"] > 0 else "#15803D"}"></i></div></td><td><b style="color:{"#DC2626" if r["delta"] > 0 else "#15803D"}">{r["delta"]:+.1f}</b></td></tr>')
+    base, bars = I.waterfall_geometry(ins)
+    rows = ""
+    for b in bars:
+        color = "#98A2B3" if b["delta"] is None else "#DC2626" if b["delta"] > 0 else "#15803D"
+        points = f"{base:.1f}" if b["delta"] is None else f"{b['delta']:+.1f}"
+        rows += (f'<tr><td>{esc(b["label"])}</td><td style="width:50%"><div class="wf"><i style="left:{max(0, b["left"]):.1f}%;'
+                 f'width:{b["width"]:.1f}%;background:{color}"></i></div></td><td><b style="color:{color}">{points}</b></td></tr>')
     rows += f'<tr><td><b>Final risk score</b></td><td></td><td><b>{score:g}</b></td></tr>'
     return f'<table class="t"><tr><th>Factor</th><th>Contribution on the 0-100 scale</th><th>Points</th></tr>{rows}</table>'
 
@@ -538,27 +527,27 @@ def page_method():
                  ("3. Explanation", "SHAP attributes the score to individual answers, starting from the average organisation. An LLM (or offline templates) turns this into a plain-language narrative grounded in a control knowledge base."),
                  ("4. Remediation", "Each gap is re-scored by changing the answer and re-running the model, which gives the real modelled reduction. Actions are grouped by effort into 30/60/90-day phases.")]
         H('<table class="t">' + "".join(f"<tr><td style='width:160px'><b>{t}</b></td><td>{d}</td></tr>" for t, d in steps) + "</table>")
-    res_dir = os.path.join(HERE, "results")
-    comp = os.path.join(res_dir, "model_comparison.csv")
+    res_dir = RESULTS_DIR
+    comp = res_dir / "model_comparison.csv"
     st.write("")
     with st.container(border=True):
-        H('<div class="cardh">Model performance</div><div class="cards">Held-out test set, produced by train_models.py</div>')
-        if os.path.exists(comp):
+        H('<div class="cardh">Model performance</div><div class="cards">Held-out test set, produced by scripts/train_models.py</div>')
+        if comp.exists():
             st.dataframe(pd.read_csv(comp), hide_index=True, **STRETCH)
             for f, t in [("score_model_metrics.txt", "Risk-score regressor"), ("cross_validation.txt", "Cross-validation")]:
-                fp = os.path.join(res_dir, f)
-                if os.path.exists(fp):
-                    st.caption(f"{t}: " + open(fp).read().strip().replace("\n", " | "))
+                fp = res_dir / f
+                if fp.exists():
+                    st.caption(f"{t}: " + fp.read_text().strip().replace("\n", " | "))
         else:
-            H('<div class="note">Run <b>python train_models.py</b> to populate the model results.</div>')
-    imgs = [(f, t) for f, t in [("confusion_matrix.png", "Confusion matrix"), ("shap_summary.png", "SHAP feature impact")] if os.path.exists(os.path.join(res_dir, f))]
+            H('<div class="note">Run <b>python scripts/train_models.py</b> to populate the model results.</div>')
+    imgs = [(f, t) for f, t in [("confusion_matrix.png", "Confusion matrix"), ("shap_summary.png", "SHAP feature impact")] if (res_dir / f).exists()]
     if imgs:
         st.write("")
         for col_, (f, t) in zip(st.columns(len(imgs)), imgs):
             with col_:
                 with st.container(border=True):
                     H(f'<div class="cardh">{t}</div>')
-                    st.image(os.path.join(res_dir, f))
+                    st.image(res_dir / f)
     st.write("")
     with st.container(border=True):
         H('<div class="cardh">Assumptions and limitations</div>')

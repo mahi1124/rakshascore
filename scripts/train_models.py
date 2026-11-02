@@ -1,22 +1,22 @@
 """
-train_models.py  -  your project-2.ipynb converted into one script (+ the extra pieces the pipeline needs).
+Train, compare and persist the RakshaScore models (project-2.ipynb converted to a script).
 
-Run from the VS Code terminal (venv active, inside the project folder):
-    python train_models.py
-    python train_models.py path/to/other_dataset.csv
+Usage:
+    python scripts/train_models.py
+    python scripts/train_models.py path/to/other_dataset.csv
 
 What it does
   1. Loads the dataset and prepares X / y                      (notebook cells 0-2)
   2. Builds the preprocessing + 4 models and compares them     (cells 3-9)
-  3. Picks the best model, saves it                            (cells 10-11)
+  3. Picks the best model, saves it to models/                 (cells 10-11)
   4. Trains the 0-100 score model (regressor)                  (new)
   5. Creates SHAP plot, per-class report, cross-validation     (new)
-Everything printed is also saved in the results/ folder, so you never have to re-run before the review.
+Everything printed is also saved in results/, so the dashboard has data without re-running.
 """
-import os
-import sys
+import argparse
 import warnings
 
+import _bootstrap  # noqa: F401  (makes `rakshascore` importable)
 import joblib
 import matplotlib
 matplotlib.use("Agg")                      # draw to files instead of opening windows
@@ -36,10 +36,15 @@ from sklearn.preprocessing import LabelEncoder, OneHotEncoder, StandardScaler
 from sklearn.tree import DecisionTreeClassifier
 from xgboost import XGBClassifier, XGBRegressor
 
+from rakshascore import paths
+
 warnings.filterwarnings("ignore")
-CSV = sys.argv[1] if len(sys.argv) > 1 else "SMB_Cyber_Risk_Dataset_10000_Rows.csv"
-RESULTS = "results"
-os.makedirs(RESULTS, exist_ok=True)
+ap = argparse.ArgumentParser(description="Train and persist the RakshaScore models.")
+ap.add_argument("csv", nargs="?", default=str(paths.DEFAULT_DATASET), help="dataset CSV")
+CSV = ap.parse_args().csv
+RESULTS = paths.RESULTS_DIR
+RESULTS.mkdir(parents=True, exist_ok=True)
+paths.MODELS_DIR.mkdir(parents=True, exist_ok=True)
 
 # ------------------------------------------------------------------ 1. load + prepare
 df = pd.read_csv(CSV)
@@ -131,8 +136,8 @@ cv_scores = cross_val_score(clone(best_model), X, y_encoded, cv=cv, scoring="f1_
 print(f"\n5-fold CV macro-F1 ({best_name}): {cv_scores.mean():.4f} +/- {cv_scores.std():.4f}")
 open(f"{RESULTS}/cross_validation.txt", "w").write(f"{best_name} 5-fold macro-F1: {cv_scores.mean():.4f} +/- {cv_scores.std():.4f}\n")
 
-joblib.dump(best_model, "cyber_risk_best_model_10k.pkl")
-joblib.dump(le, "label_encoder.pkl")
+joblib.dump(best_model, paths.CLF_PATH)
+joblib.dump(le, paths.LABEL_ENCODER_PATH)
 
 # ------------------------------------------------------------------ 5. 0-100 score model + SHAP
 score_model = Pipeline([
@@ -145,7 +150,7 @@ mae = mean_absolute_error(df.loc[X_test.index, "cyber_risk_score"], score_pred)
 r2 = r2_score(df.loc[X_test.index, "cyber_risk_score"], score_pred)
 print(f"\nScore model  MAE: {mae:.2f}   R2: {r2:.4f}")
 open(f"{RESULTS}/score_model_metrics.txt", "w").write(f"MAE: {mae:.2f}\nR2: {r2:.4f}\n")
-joblib.dump(score_model, "score_model.pkl")
+joblib.dump(score_model, paths.SCORE_MODEL_PATH)
 
 pre = score_model.named_steps["preprocessor"]
 Xt = pre.transform(X_test.iloc[:1000])
@@ -156,4 +161,4 @@ plt.tight_layout()
 plt.savefig(f"{RESULTS}/shap_summary.png", dpi=200, bbox_inches="tight")
 plt.close()
 
-print(f"\nDONE. Models saved in this folder; plots and tables saved in ./{RESULTS}/")
+print(f"\nDONE. Models saved in {paths.MODELS_DIR}; plots and tables saved in {RESULTS}")

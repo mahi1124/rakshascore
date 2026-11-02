@@ -9,7 +9,7 @@ import json
 import math
 from datetime import datetime
 
-import pipeline as P
+from . import pipeline as P
 
 # --------------------------------------------------------------------------------------------- knowledge base
 # col: (id, title, question, guidance, refs, why, impact, fix, effort, cost)
@@ -412,6 +412,17 @@ def waterfall(impacts, top_n=7):
     return base, rows, cur
 
 
+def waterfall_geometry(ins):
+    """Shared bar geometry (percent of a common axis) for the baseline and every waterfall row."""
+    wf = ins["waterfall"]
+    span = max(100.0, wf["base"] + sum(max(0, r["delta"]) for r in wf["rows"]))
+    bars = [dict(label="Baseline (average organisation)", delta=None, left=0.0, width=wf["base"] / span * 100)]
+    for r in wf["rows"]:
+        lo, hi = min(r["start"], r["end"]), max(r["start"], r["end"])
+        bars.append(dict(label=r["label"], delta=r["delta"], left=lo / span * 100, width=max(.8, (hi - lo) / span * 100)))
+    return wf["base"], bars
+
+
 def _num(v):
     try:
         f = float(v)
@@ -513,7 +524,6 @@ def build_insights(record, score, tier, impacts, org, use_llm):
                 meaning = clean(data["score_meaning"])
             if data.get("outlook"):
                 outlook = clean(data["outlook"])
-            known = {d["col"] for d in drivers}
             for d in drivers:
                 t = (data.get("driver_insights") or {}).get(d["col"])
                 if t:
@@ -619,12 +629,13 @@ def report_html(meta, res, ins):
         f'<td><div class="bar"><i style="width:{min(100, max(3, abs(d["net"]) / (max(abs(x["net"]) for x in ins["domains"]) or 1) * 100)):.0f}%;background:{"#DC2626" if d["net"] > 0 else "#15803D"}"></i></div></td>'
         f'<td><b>{d["net"]:+.1f}</b></td></tr>' for d in sorted(ins["domains"], key=lambda d: -d["net"]))
 
-    rng = max(100, wf["base"] + sum(max(0, r["delta"]) for r in wf["rows"]))
-    wf_rows = f'<tr><td>Baseline (average organisation)</td><td><div class="wf"><i style="left:0;width:{wf["base"] / rng * 100:.1f}%;background:#98A2B3"></i></div></td><td>{wf["base"]:.1f}</td></tr>'
-    for r in wf["rows"]:
-        lo, hi = min(r["start"], r["end"]), max(r["start"], r["end"])
-        wf_rows += (f'<tr><td>{esc(r["label"])}</td><td><div class="wf"><i style="left:{lo / rng * 100:.1f}%;width:{max(.8, (hi - lo) / rng * 100):.1f}%;'
-                    f'background:{"#DC2626" if r["delta"] > 0 else "#15803D"}"></i></div></td><td>{r["delta"]:+.1f}</td></tr>')
+    base, bars = waterfall_geometry(ins)
+    wf_rows = ""
+    for b in bars:
+        color = "#98A2B3" if b["delta"] is None else "#DC2626" if b["delta"] > 0 else "#15803D"
+        points = f"{base:.1f}" if b["delta"] is None else f"{b['delta']:+.1f}"
+        wf_rows += (f'<tr><td>{esc(b["label"])}</td><td><div class="wf"><i style="left:{b["left"]:.1f}%;'
+                    f'width:{b["width"]:.1f}%;background:{color}"></i></div></td><td>{points}</td></tr>')
     wf_rows += f'<tr><td><b>Final risk score</b></td><td></td><td><b>{score:g}</b></td></tr>'
 
     register = "".join(
