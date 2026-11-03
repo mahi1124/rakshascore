@@ -53,7 +53,7 @@ template narratives.
 │   └── insights.py              # knowledge base, narratives, HTML report
 ├── tests/                       # pytest suite + labelled extraction cases
 ├── notebooks/                   # original exploratory notebook
-├── docs/                        # legacy build steps
+├── docs/                        # build notes + presentation generator and assets
 └── archive/                     # unrelated student exercises and images
 ```
 
@@ -156,6 +156,19 @@ python -m pytest
 
 The suite covers schema consistency, rule-based extraction against every labelled case,
 scoring/SHAP invariants, remediation planning, and report rendering.
+
+## Presentation
+
+`RakshaScore_Presentation.pptx` is a 15-slide project deck with speaker notes, covering the
+problem, architecture, model results, explainability, engineering and limitations.
+
+```bash
+# Rebuild it after changing the slides or screenshots
+python docs/presentation/build_deck.py
+```
+
+Screenshots and the QR code live in `docs/presentation/assets/`; edit `build_deck.py` to
+change the wording or layout.
 
 ---
 
